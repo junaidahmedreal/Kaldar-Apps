@@ -1,0 +1,6 @@
+{
+  "name": "Kaldar",
+  "description": "100% offline-first AI expense tracker with ML Kit OCR receipt scanning, manual expense form, custom themes and languages, Room/Flatmate shared group expenses, and monthly settlement slips.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
