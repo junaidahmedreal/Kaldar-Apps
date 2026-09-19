@@ -73,6 +73,7 @@ fun TransactionsScreen(
     val accountMode by viewModel.accountMode.collectAsState()
     val language by viewModel.appLanguage.collectAsState()
     val transactions by viewModel.transactions.collectAsState()
+    val availableRooms by viewModel.allRooms.collectAsState()
 
     var searchQuery by remember { mutableStateOf("") }
     var selectedCategoryFilter by remember { mutableStateOf("All") }
@@ -247,10 +248,22 @@ fun TransactionsScreen(
         AddManualExpenseDialog(
             initialAccountMode = accountMode,
             language = language,
+            availableRooms = availableRooms,
             onDismiss = { showAddDialog = false },
-            onSave = { entity ->
+            onSave = { entity, selectedRoomId ->
                 coroutineScope.launch {
                     viewModel.repository.saveTransaction(entity)
+                    if (selectedRoomId != null) {
+                        viewModel.addExpenseToRoom(
+                            roomId = selectedRoomId,
+                            title = entity.merchant,
+                            amount = entity.totalAmount,
+                            category = entity.category,
+                            date = entity.date,
+                            currency = entity.currency,
+                            notes = "Manual Expense"
+                        )
+                    }
                 }
                 showAddDialog = false
             }

@@ -3,8 +3,10 @@ package com.example.ui.viewmodel
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.data.local.entity.RoomEntity
 import com.example.data.local.entity.TransactionEntity
 import com.example.data.repository.ExpenseRepository
+import com.example.data.repository.RoomRepository
 import com.example.data.security.SecurePreferencesManager
 import com.example.ui.components.CategorySlice
 import com.example.ui.components.getCategoryColor
@@ -24,7 +26,11 @@ import java.util.Locale
 class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     val repository = ExpenseRepository(application)
+    val roomRepository = RoomRepository(application)
     private val prefs = SecurePreferencesManager(application)
+
+    val allRooms: StateFlow<List<RoomEntity>> = roomRepository.getAllRooms()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     private val _accountMode = MutableStateFlow(prefs.getAccountMode())
     val accountMode: StateFlow<String> = _accountMode.asStateFlow()
@@ -104,6 +110,35 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun deleteTransaction(transaction: TransactionEntity) {
         viewModelScope.launch {
             repository.deleteTransaction(transaction)
+        }
+    }
+
+    fun addExpenseToRoom(
+        roomId: Long,
+        title: String,
+        amount: Double,
+        category: String,
+        date: String,
+        currency: String,
+        notes: String = ""
+    ) {
+        viewModelScope.launch {
+            try {
+                val room = allRooms.value.firstOrNull { it.id == roomId }
+                val paidBy = room?.adminName?.ifBlank { "You" } ?: "You"
+                roomRepository.addExpense(
+                    roomId = roomId,
+                    title = title.ifBlank { "Expense" },
+                    amount = amount,
+                    paidBy = paidBy,
+                    category = category,
+                    date = date,
+                    currency = currency.ifBlank { room?.currency ?: "$" },
+                    notes = notes
+                )
+            } catch (e: Exception) {
+                // Ignore or handle
+            }
         }
     }
 }

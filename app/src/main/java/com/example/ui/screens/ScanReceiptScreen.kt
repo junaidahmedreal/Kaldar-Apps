@@ -109,6 +109,8 @@ fun ScanReceiptScreen(
     val tax by viewModel.tax.collectAsState()
     val discount by viewModel.discount.collectAsState()
     val items by viewModel.items.collectAsState()
+    val availableRooms by viewModel.availableRooms.collectAsState()
+    val selectedRoomId by viewModel.selectedRoomId.collectAsState()
 
     // Camera launcher
     val cameraLauncher = rememberLauncherForActivityResult(
@@ -254,6 +256,9 @@ fun ScanReceiptScreen(
                         items = items,
                         isAiParsed = isAiParsed,
                         language = language,
+                        availableRooms = availableRooms,
+                        selectedRoomId = selectedRoomId,
+                        onRoomSelected = { viewModel.selectedRoomId.value = it },
                         onSave = {
                             viewModel.saveTransaction(accountMode, displayedCanvasWidth = 360f, displayedCanvasHeight = 360f)
                         }
@@ -614,9 +619,13 @@ private fun EditDetailsView(
     items: List<com.example.data.local.entity.ReceiptItem>,
     isAiParsed: Boolean,
     language: String,
+    availableRooms: List<com.example.data.local.entity.RoomEntity> = emptyList(),
+    selectedRoomId: Long? = null,
+    onRoomSelected: (Long?) -> Unit = {},
     onSave: () -> Unit
 ) {
     var categoryExpanded by remember { mutableStateOf(false) }
+    var roomExpanded by remember { mutableStateOf(false) }
     val categoriesList = listOf("Food", "Groceries", "Fuel", "Medical", "Travel", "Shopping", "Utilities", "Entertainment", "Office", "Other")
 
     var paymentExpanded by remember { mutableStateOf(false) }
@@ -718,6 +727,65 @@ private fun EditDetailsView(
                         }
                     )
                 }
+            }
+        }
+
+        if (availableRooms.isNotEmpty()) {
+            Spacer(modifier = Modifier.height(10.dp))
+
+            // Room / Group Dropdown
+            val selectedRoomName = availableRooms.firstOrNull { it.id == selectedRoomId }?.name
+                ?: AppStrings.get("personal_no_room", language)
+
+            ExposedDropdownMenuBox(
+                expanded = roomExpanded,
+                onExpandedChange = { roomExpanded = !roomExpanded },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                OutlinedTextField(
+                    value = selectedRoomName,
+                    onValueChange = {},
+                    readOnly = true,
+                    label = { Text(AppStrings.get("select_room_optional", language)) },
+                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = roomExpanded) },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .menuAnchor()
+                        .testTag("dropdown_room")
+                )
+                ExposedDropdownMenu(
+                    expanded = roomExpanded,
+                    onDismissRequest = { roomExpanded = false }
+                ) {
+                    // Option 1: None / Personal
+                    DropdownMenuItem(
+                        text = { Text(AppStrings.get("personal_no_room", language)) },
+                        onClick = {
+                            onRoomSelected(null)
+                            roomExpanded = false
+                        }
+                    )
+                    // Room Options
+                    availableRooms.forEach { room ->
+                        DropdownMenuItem(
+                            text = { Text(room.name) },
+                            onClick = {
+                                onRoomSelected(room.id)
+                                roomExpanded = false
+                            }
+                        )
+                    }
+                }
+            }
+
+            if (selectedRoomId != null) {
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = AppStrings.get("add_to_room_info", language),
+                    fontSize = 11.sp,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(start = 4.dp)
+                )
             }
         }
 

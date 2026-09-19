@@ -12,9 +12,11 @@ import com.example.data.ai.GeminiApiClient
 import com.example.data.ai.ParsedReceiptData
 import com.example.data.ai.RuleBasedCategorizer
 import com.example.data.local.entity.ReceiptItem
+import com.example.data.local.entity.RoomEntity
 import com.example.data.local.entity.TransactionEntity
 import com.example.data.ocr.ReceiptOcrHelper
 import com.example.data.repository.ExpenseRepository
+import com.example.data.repository.RoomRepository
 import com.example.data.security.SecurePreferencesManager
 import com.example.data.worker.ReceiptSyncWorker
 import com.example.ui.components.applyRedactionsToBitmap
@@ -22,8 +24,10 @@ import com.squareup.moshi.Moshi
 import com.squareup.moshi.Types
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.InputStream
@@ -43,9 +47,15 @@ enum class ScanStep {
 class ScanViewModel(application: Application) : AndroidViewModel(application) {
 
     private val repository = ExpenseRepository(application)
+    private val roomRepository = RoomRepository(application)
     private val ocrHelper = ReceiptOcrHelper()
     private val geminiClient = GeminiApiClient()
     private val prefs = SecurePreferencesManager(application)
+
+    val availableRooms: StateFlow<List<RoomEntity>> = roomRepository.getAllRooms()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val selectedRoomId = MutableStateFlow<Long?>(null)
 
     private val moshi = Moshi.Builder().build()
     private val itemsAdapter = moshi.adapter<List<ReceiptItem>>(
@@ -241,6 +251,29 @@ class ScanViewModel(application: Application) : AndroidViewModel(application) {
 
             repository.saveTransaction(entity)
 
+            // If a room was selected, also directly add this expense to that room!
+            val targetRoomId = selectedRoomId.value
+            if (targetRoomId != null && amt > 0) {
+                try {
+                    val targetRoom = availableRooms.value.firstOrNull { it.id == targetRoomId }
+                    val payerName = targetRoom?.adminName?.ifBlank { "You" } ?: "You"
+                    val expTitle = merchant.value.ifBlank { "Receipt Expense" }
+                    val expDate = date.value.ifBlank { SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date()) }
+                    roomRepository.addExpense(
+                        roomId = targetRoomId,
+                        title = expTitle,
+                        amount = amt,
+                        paidBy = payerName,
+                        category = category.value.ifBlank { "Other" },
+                        date = expDate,
+                        currency = currency.value.ifBlank { targetRoom?.currency ?: "$" },
+                        notes = "Scanned Receipt"
+                    )
+                } catch (e: Exception) {
+                    // Safe fallback
+                }
+            }
+
             if (isPending) {
                 ReceiptSyncWorker.schedule(getApplication())
             }
@@ -262,5 +295,6 @@ class ScanViewModel(application: Application) : AndroidViewModel(application) {
         tax.value = "0.0"
         discount.value = "0.0"
         items.value = emptyList()
+        selectedRoomId.value = null
     }
 }

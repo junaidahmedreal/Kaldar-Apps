@@ -30,8 +30,10 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.CreditCard
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.MeetingRoom
 import androidx.compose.material.icons.filled.Money
 import androidx.compose.material.icons.filled.Notes
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Receipt
 import androidx.compose.material.icons.filled.Store
 import androidx.compose.material3.Button
@@ -66,6 +68,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import com.example.data.local.entity.RoomEntity
 import com.example.data.local.entity.TransactionEntity
 import com.example.ui.locale.AppStrings
 import java.text.SimpleDateFormat
@@ -78,14 +81,16 @@ fun AddManualExpenseDialog(
     initialAccountMode: String,
     defaultCurrency: String = "$",
     language: String = "en",
+    availableRooms: List<RoomEntity> = emptyList(),
     onDismiss: () -> Unit,
-    onSave: (TransactionEntity) -> Unit
+    onSave: (entity: TransactionEntity, selectedRoomId: Long?) -> Unit
 ) {
     var accountMode by remember { mutableStateOf(initialAccountMode) }
     var merchant by remember { mutableStateOf("") }
     var amountText by remember { mutableStateOf("") }
     var selectedCurrency by remember { mutableStateOf(defaultCurrency) }
     var selectedCategory by remember { mutableStateOf("Food") }
+    var selectedRoomId by remember { mutableStateOf<Long?>(null) }
     var selectedPaymentMethod by remember { mutableStateOf("Cash") }
     var invoiceNumber by remember { mutableStateOf("") }
     var notes by remember { mutableStateOf("") }
@@ -342,6 +347,95 @@ fun AddManualExpenseDialog(
                     }
                 }
 
+                if (availableRooms.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(14.dp))
+
+                    // Room / Group Selection (Just like Category chips)
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(
+                            text = AppStrings.get("select_room_optional", language),
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        if (selectedRoomId != null) {
+                            Text(
+                                text = "✓ Linked",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(6.dp))
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        // Option 1: None / Personal Expense
+                        FilterChip(
+                            selected = selectedRoomId == null,
+                            onClick = { selectedRoomId = null },
+                            leadingIcon = {
+                                Icon(
+                                    imageVector = Icons.Default.Person,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                            },
+                            label = { Text(AppStrings.get("personal_no_room", language), fontSize = 12.sp) },
+                            colors = FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = MaterialTheme.colorScheme.secondaryContainer,
+                                selectedLabelColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                                selectedLeadingIconColor = MaterialTheme.colorScheme.onSecondaryContainer
+                            ),
+                            modifier = Modifier.testTag("room_chip_none")
+                        )
+
+                        // Room Options
+                        availableRooms.forEach { room ->
+                            val isSelected = selectedRoomId == room.id
+                            FilterChip(
+                                selected = isSelected,
+                                onClick = {
+                                    selectedRoomId = if (isSelected) null else room.id
+                                },
+                                leadingIcon = {
+                                    Icon(
+                                        imageVector = Icons.Default.MeetingRoom,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                },
+                                label = { Text(room.name, fontSize = 12.sp, fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal) },
+                                colors = FilterChipDefaults.filterChipColors(
+                                    selectedContainerColor = MaterialTheme.colorScheme.primary,
+                                    selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
+                                    selectedLeadingIconColor = MaterialTheme.colorScheme.onPrimary
+                                ),
+                                modifier = Modifier.testTag("room_chip_${room.id}")
+                            )
+                        }
+                    }
+
+                    if (selectedRoomId != null) {
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = AppStrings.get("add_to_room_info", language),
+                            fontSize = 11.sp,
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.padding(start = 2.dp)
+                        )
+                    }
+                }
+
                 Spacer(modifier = Modifier.height(14.dp))
 
                 // Date & Time Row
@@ -492,7 +586,7 @@ fun AddManualExpenseDialog(
                                 rawText = "Manual entry: ${merchant.trim()}",
                                 isPendingParse = false
                             )
-                            onSave(entity)
+                            onSave(entity, selectedRoomId)
                         },
                         shape = RoundedCornerShape(12.dp),
                         modifier = Modifier.testTag("save_manual_expense_button")

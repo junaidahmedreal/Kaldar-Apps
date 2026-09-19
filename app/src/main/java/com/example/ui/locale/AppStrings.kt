@@ -125,7 +125,10 @@ object AppStrings {
             "invite_code" to "Invite Code",
             "share_invite" to "Share Invite",
             "members_count" to "Members",
-            "switch_room" to "Switch Room"
+            "switch_room" to "Switch Room",
+            "select_room_optional" to "Room / Group (Optional)",
+            "personal_no_room" to "None (Personal Expense)",
+            "add_to_room_info" to "This expense will also be added to the selected Room's shared expenses."
         ),
         "ur" to mapOf(
             "app_title" to "کلدار (Kaldar)",
@@ -245,7 +248,10 @@ object AppStrings {
             "invite_code" to "انوائٹ کوڈ",
             "share_invite" to "انوائٹ شیئر کریں",
             "members_count" to "ممبران",
-            "switch_room" to "روم تبدیل کریں"
+            "switch_room" to "روم تبدیل کریں",
+            "select_room_optional" to "روم / گروپ میں شامل کریں (اختیاری)",
+            "personal_no_room" to "کوئی نہیں (ذاتی خرچ)",
+            "add_to_room_info" to "یہ خرچ منتخب کردہ روم کے مشترکہ حساب میں بھی شامل ہو جائے گا۔"
         ),
         "hi" to mapOf(
             "app_title" to "कलदार (Kaldar)",
@@ -365,7 +371,10 @@ object AppStrings {
             "invite_code" to "इनवाइट कोड",
             "share_invite" to "इनवाइट साझा करें",
             "members_count" to "सदस्य",
-            "switch_room" to "रूम बदलें"
+            "switch_room" to "रूम बदलें",
+            "select_room_optional" to "रूम / ग्रुप चुनें (वैकल्पिक)",
+            "personal_no_room" to "कोई नहीं (व्यक्तिगत खर्च)",
+            "add_to_room_info" to "यह खर्च चुने गए रूम के साझा खर्चों में भी जुड़ जाएगा।"
         ),
         "ar" to mapOf(
             "app_title" to "كلدار (Kaldar)",
@@ -485,7 +494,10 @@ object AppStrings {
             "invite_code" to "رمز الدعوة",
             "share_invite" to "مشاركة الدعوة",
             "members_count" to "الأعضاء",
-            "switch_room" to "تبديل الغرفة"
+            "switch_room" to "تبديل الغرفة",
+            "select_room_optional" to "الغرفة / المجموعة (اختياري)",
+            "personal_no_room" to "لا شيء (مصروف شخصي)",
+            "add_to_room_info" to "سيتم إضافة هذا المصروف أيضاً إلى مصاريف الغرفة المشتركة المحددة."
         )
     )
 }

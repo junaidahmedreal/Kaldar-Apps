@@ -76,6 +76,7 @@ fun HomeScreen(
     val categorySlices by viewModel.categorySlices.collectAsState()
     val pendingCount by viewModel.pendingCount.collectAsState()
     val isSyncing by viewModel.isSyncing.collectAsState()
+    val availableRooms by viewModel.allRooms.collectAsState()
 
     var selectedTransaction by remember { mutableStateOf<TransactionEntity?>(null) }
     var showManualDialog by remember { mutableStateOf(false) }
@@ -558,10 +559,22 @@ fun HomeScreen(
             initialAccountMode = accountMode,
             defaultCurrency = currencySymbol,
             language = language,
+            availableRooms = availableRooms,
             onDismiss = { showManualDialog = false },
-            onSave = { entity ->
+            onSave = { entity, selectedRoomId ->
                 coroutineScope.launch {
                     viewModel.repository.saveTransaction(entity)
+                    if (selectedRoomId != null) {
+                        viewModel.addExpenseToRoom(
+                            roomId = selectedRoomId,
+                            title = entity.merchant,
+                            amount = entity.totalAmount,
+                            category = entity.category,
+                            date = entity.date,
+                            currency = entity.currency,
+                            notes = "Manual Expense"
+                        )
+                    }
                 }
                 showManualDialog = false
             }
